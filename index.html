@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8"><title>TTX KPK Scoring Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#1b2430;--mu:#5d6877;--bd:#d9dee5;--ac:#8a1c1c;--ac2:#f6e9e9;--ok:#1d7a46;--wa:#b26a00;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12161c;--card:#1b222b;--tx:#e8ecf1;--mu:#98a3b1;--bd:#2e3844;--ac:#e07a7a;--ac2:#33201f;--ok:#5fc78b;--wa:#e0a24a;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161c;--card:#1b222b;--tx:#e8ecf1;--mu:#98a3b1;--bd:#2e3844;--ac:#e07a7a;--ac2:#33201f;--ok:#5fc78b;--wa:#e0a24a;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--ac);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+header h1{font-size:18px;margin:0}header small{opacity:.85}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.kpi b{font-size:26px;display:block}.mu{color:var(--mu);font-size:13px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:8px;padding:8px 12px;cursor:pointer}
+button.p{background:var(--ac);border-color:var(--ac);color:#fff}button.on{background:var(--ac2);border-color:var(--ac);font-weight:600}button:disabled{opacity:.45;cursor:not-allowed}
+.sc{display:flex;gap:6px;flex-wrap:wrap}.sc button{width:42px;height:42px;padding:0}
+textarea,input,select{font:inherit;width:100%;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:8px}
+.tw{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:560px}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--bd);font-size:14px}th{color:var(--mu);font-weight:600}
+.b{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;border:1px solid var(--bd)}.b.ok{color:var(--ok);border-color:var(--ok)}.b.wa{color:var(--wa);border-color:var(--wa)}
+ul.r{margin:6px 0 10px;padding-left:18px;color:var(--mu);font-size:13px}
+.bar{display:flex;align-items:center;gap:8px;margin:5px 0}.bar i{display:block;height:16px;background:var(--ac);border-radius:4px}.bar span{width:110px;font-size:13px;flex:none}
+.bot{position:sticky;bottom:0;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.warn{color:var(--wa)}
+</style></head><body>
+<header><h1>TTX KPK Scoring Dashboard</h1><small><a href="#" style="color:#fff" onclick="go('home');return false">Beranda</a></small></header>
+<main id="app"><div class="card">Memuat…</div></main>
+<script>
+const TEAMS=["ACLC","KWS","SPDP","GOL","LHKPN","Salma","SPI Pendidikan","PPID"].map((n,i)=>({id:"t"+(i+1),n}));
+const INJ=[
+["Kredensial Bocor",["Validasi sumber informasi dan akun yang terindikasi","Eskalasi ke CSIRT/IT dan pemilik aplikasi","Identifikasi status akun, hak akses, dan risiko","Mitigasi awal berdasarkan risiko"]],
+["Akun Masih Aktif",["Menonaktifkan/mengamankan kredensial sesuai risiko","Mempertimbangkan pencabutan sesi/token aktif","Mengamankan log dan bukti","Menentukan PIC dan otorisasi tindakan"]],
+["Login Tidak Dikenali",["Memperlakukan sebagai dugaan kompromi","Memeriksa waktu, sumber login, aktivitas akun","Membatasi akses berdasarkan risiko","Menjaga bukti tanpa kesimpulan belum terverifikasi"]],
+["Data Pribadi Berisiko",["Mengidentifikasi jenis data dan cakupan hak akses","Memeriksa akses, unduh, indikasi eksfiltrasi","Pembatasan akses berdasarkan risiko","Melibatkan pemilik aplikasi dan fungsi hukum"]],
+["Akses Berhasil Tanpa Verifikasi Tambahan",["Mengenali kelemahan autentikasi password saja","Menentukan mitigasi akun dan sesi","Mengusulkan MFA sebagai kontrol prioritas","Menilai risiko pada akun/aplikasi lain"]],
+["Sampel Data Beredar",["Memverifikasi sampel secara aman","Mengamankan bukti dan mencatat kronologi","Tidak menyebarkan sampel tanpa kebutuhan","Membedakan fakta terverifikasi dan klaim pihak lain"]],
+["Pimpinan dan Media Bertanya",["Menyampaikan fakta, yang belum diketahui, dampak, tindakan","Menetapkan satu jalur komunikasi resmi","Menghindari spekulasi tanpa bukti","Mengkaji kewajiban pelaporan"]],
+["Keputusan Akhir",["Tindakan akun/layanan sesuai tingkat risiko","Rencana tindak lanjut 24 jam, 7 hari, 30 hari","Menetapkan PIC dan tenggat","Implementasi MFA dan evaluasi aplikasi lain"]]];
+const CAT=[["Mitigasi dan keamanan akses",15],["Perlindungan data pribadi dan bukti",10],["Koordinasi dan kejelasan peran",10],["Keputusan dan keberlangsungan layanan",10],["Komunikasi krisis dan asesmen kewajiban pelaporan",5],["Rencana perbaikan, MFA, dan tindak lanjut",10]];
+const SCALE="0 Tidak ada/tidak relevan · 1 Sangat lemah · 2 Kurang · 3 Cukup · 4 Baik · 5 Sangat baik, jelas & dapat dilaksanakan";
+const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const valid=v=>Number.isInteger(v)&&v>=0&&v<=5;
+const done=s=>s&&s.inj&&s.cat&&s.inj.length==8&&s.cat.length==6&&s.inj.every(valid)&&s.cat.every(valid);
+const sumInj=s=>s.inj.reduce((a,v)=>a+(valid(v)?v:0),0);
+const wt=s=>s.cat.map((v,i)=>valid(v)?v/5*CAT[i][1]:0);
+const total=s=>Math.round((sumInj(s)+wt(s).reduce((a,b)=>a+b,0))*100)/100;
+const blank=id=>({team:id,evaluator:"",state:"none",inj:Array(8).fill(null),cat:Array(6).fill(null),notes:Array(8).fill(""),catNotes:"",hist:[]});
+let db,T={},FIN=null,view="home",cur=null,D=null,sel="t1",tab="ring";
+const st=id=>T[id]?.state=="submitted"?"Terkirim":T[id]?.state=="draft"||T[id]?.state=="reopened"?"Draft":"Belum Dimulai";
+const badge=id=>{const l=st(id);return `<span class="b ${l=="Terkirim"?"ok":l=="Draft"?"wa":""}">${l}</span>`};
+const SB="https://tzgednbdwttjavbdcyrn.supabase.co",KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6Z2VkbmJkd3R0amF2YmRjeXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMjc3MDMsImV4cCI6MjEwNzYwMzcwM30.cQjGg9xpTuD9CkOpyY2wOzddZSRztQZyI1mcCiwQBXI";
+const H={apikey:KEY,Authorization:"Bearer "+KEY,"Content-Type":"application/json"};
+async function rq(p,o={}){const r=await fetch(SB+"/rest/v1/"+p,{...o,headers:{...H,...(o.headers||{})}});const t=await r.text();if(!r.ok){let m=t;try{m=JSON.parse(t).message||t}catch(e){}throw new Error(m)}return t?JSON.parse(t):null}
+const fromRow=r=>({team:r.team_id,evaluator:r.evaluator||"",state:r.state,inj:r.inj,cat:r.cat,notes:r.notes,catNotes:r.cat_notes||"",hist:r.hist||[]});
+const UP={method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"}};
+const api={
+ async load(){const [a,b]=await Promise.all([rq("evaluations?select=*"),rq("final_result?select=*")]);T={};a.forEach(x=>T[x.team_id]=fromRow(x));FIN=b[0]?{w:b[0].winners,note:b[0].note,manual:b[0].manual}:null},
+ async save(d){await rq("evaluations?on_conflict=team_id",{...UP,body:JSON.stringify({team_id:d.team,evaluator:d.evaluator,state:d.state,inj:d.inj,cat:d.cat,notes:d.notes,cat_notes:d.catNotes,hist:d.hist})});T[d.team]=JSON.parse(JSON.stringify(d))},
+ async setFinal(f){await rq("final_result?on_conflict=id",{...UP,body:JSON.stringify({id:1,winners:f.w,note:f.note,manual:f.manual})});FIN=f;render()},
+ async delFinal(){await rq("final_result?id=eq.1",{method:"DELETE"});FIN=null;render()}};
+async function refresh(){try{await api.load()}catch(e){if(view!="form")$("#app").innerHTML='<div class="card warn">Gagal terhubung ke database: '+esc(e.message)+'</div>';return}
+ if(view=="home"||(view=="rekap"&&tab!="rank"))render()}
+async function init(){await refresh();if(view=="home")render();setInterval(refresh,15000)}
+function go(v,id){view=v;if(v=="form"){cur=id;D=JSON.parse(JSON.stringify(T[id]||blank(id)));D.hist=D.hist||[]}render()}
+function render(){view=="home"?home():view=="form"?form():rekap()}
+function home(){$("#app").innerHTML=`<div class="card"><b>Pilih tim yang Anda nilai</b><p class="mu">Isi nama evaluator di formulir, simpan draft, lalu kirim bila sudah lengkap.</p><div class="grid">${TEAMS.map(t=>`<button onclick="go('form','${t.id}')" style="text-align:left"><b>${esc(t.n)}</b><br>${badge(t.id)}<div class="mu">${esc(T[t.id]?.evaluator||"")}</div></button>`).join("")}</div></div><button class="p" onclick="go('rekap')">Rekap & Peringkat</button>`}
+function form(){
+ const team=TEAMS.find(t=>t.id==cur),lock=D.state=="submitted";
+ const miss=[...D.inj.map((v,i)=>valid(v)?null:"Inject "+(i+1)),...D.cat.map((v,i)=>valid(v)?null:CAT[i][0]),D.evaluator.trim()?null:"Nama evaluator"].filter(Boolean);
+ const btns=(a,i,k)=>`<div class="sc">${[0,1,2,3,4,5].map(n=>`<button ${lock?"disabled":""} class="${a[i]===n?"p":""}" onclick="setS('${k}',${i},${n})">${n}</button>`).join("")}</div>`;
+ $("#app").innerHTML=`<div class="card"><b>Tim: ${esc(team.n)}</b> ${badge(cur)}<p class="mu">Skala: ${SCALE}</p><input ${lock?"disabled":""} placeholder="Nama evaluator" value="${esc(D.evaluator)}" oninput="D.evaluator=this.value">${lock?'<p class="warn">Penilaian terkirim dan terkunci. <button onclick="unlock()">Buka kunci</button></p>':""}</div>
+ <h3>Delapan Inject (0–5)</h3>${INJ.map((x,i)=>`<div class="card"><b>Inject ${i+1} — ${x[0]}</b><ul class="r">${x[1].map(t=>`<li>${t}</li>`).join("")}</ul>${btns(D.inj,i,"inj")}<textarea ${lock?"disabled":""} rows="2" placeholder="Catatan evaluator" oninput="D.notes[${i}]=this.value">${esc(D.notes[i])}</textarea></div>`).join("")}
+ <h3>Kategori Berbobot</h3>${CAT.map((c,i)=>`<div class="card"><b>${c[0]}</b> <span class="mu">(bobot ${c[1]})</span>${btns(D.cat,i,"cat")}</div>`).join("")}
+ <div class="card"><b>Catatan umum</b><textarea ${lock?"disabled":""} rows="3" oninput="D.catNotes=this.value">${esc(D.catNotes)}</textarea></div>
+ <div class="bot"><div><b>Total sementara: ${total(D)} / 100</b><div class="mu ${miss.length?"warn":""}">${miss.length?"Belum diisi ("+miss.length+"): "+miss.join(", "):"Semua komponen terisi"}</div></div><div><button onclick="go('home')">Kembali</button> <button ${lock?"disabled":""} onclick="save('draft')">Simpan Draft</button> <button class="p" ${lock||miss.length?"disabled":""} onclick="save('submitted')">Kirim Penilaian</button></div></div>`}
+function setS(k,i,n){D[k][i]=n;form()}
+async function save(state){
+ if(state=="submitted"){if(!done(D)||!D.evaluator.trim())return alert("Masih ada komponen kosong.");if(!confirm("Kirim dan kunci penilaian? Setelah dikirim, nilai tidak dapat diubah tanpa membuka kunci."))return}
+ D.state=state;D.hist.push({a:state=="draft"?"simpan_draft":"kirim",by:D.evaluator,ts:Date.now(),total:total(D)});D.ts=Date.now();
+ try{await api.save(D);alert(state=="draft"?"Draft tersimpan.":"Penilaian terkirim.");if(state=="submitted")go("home");else form()}catch(e){alert("Gagal menyimpan: "+(e.message||e.code))}}
+async function unlock(){if(!confirm("Buka kunci penilaian ini? Perubahan akan dicatat di riwayat."))return;D.state="reopened";D.hist.push({a:"dibuka_kembali",by:D.evaluator,ts:Date.now()});try{await api.save(D);form()}catch(e){alert(e.message)}}
+
+function rows(){return TEAMS.map(t=>{const s=T[t.id],ok=s&&s.state=="submitted"&&done(s);return{t,s,ok,tot:ok?total(s):null,w:ok?wt(s):null}})}
+function ranking(){const r=rows().filter(x=>x.ok).sort((a,b)=>b.tot-a.tot||b.w[0]-a.w[0]||b.w[1]-a.w[1]||b.w[5]-a.w[5]);const k=x=>[x.tot,x.w[0],x.w[1],x.w[5]].join("|");r.forEach((x,i)=>x.tie=r.some((y,j)=>j!=i&&k(y)==k(x)));return{r,tieTop:r.some((x,i)=>x.tie&&i<3)}}
+function rekap(){
+ view="rekap";const R=rows(),sent=R.filter(x=>x.ok).length,tabs=[["ring","Ringkasan"],["det","Detail Tim"],["rank","Peringkat & Pemenang"],["log","Riwayat"]];
+ let h=`<div class="tabs">${tabs.map(t=>`<button class="${tab==t[0]?"on":""}" onclick="tab='${t[0]}';rekap()">${t[1]}</button>`).join("")}</div>`;
+ if(tab=="ring"){const mx=Math.max(100,...R.map(x=>x.tot||0));
+  h+=`<div class="grid"><div class="card kpi"><span class="mu">Jumlah tim</span><b>8</b></div><div class="card kpi"><span class="mu">Terkirim</span><b>${sent} / 8</b></div><div class="card kpi"><span class="mu">Draft / belum dimulai</span><b>${R.filter(x=>st(x.t.id)=="Draft").length} / ${R.filter(x=>st(x.t.id)=="Belum Dimulai").length}</b></div></div><p class="mu">Hasil: <b>${FIN?"FINAL":"SEMENTARA"}</b></p>
+  <div class="card tw"><table><tr><th>Tim</th><th>Evaluator</th><th>Status</th><th>Skor</th></tr>${R.map(x=>`<tr><td>${esc(x.t.n)}</td><td>${esc(x.s?.evaluator||"—")}</td><td>${badge(x.t.id)}</td><td>${x.ok?x.tot:"—"}</td></tr>`).join("")}</table></div>
+  <div class="card"><b>Perbandingan skor total</b>${R.map(x=>`<div class="bar"><span>${esc(x.t.n)}</span><i style="width:${(x.tot||0)/mx*60}%"></i><b>${x.ok?x.tot:"—"}</b></div>`).join("")}</div><button onclick="exportCsv()">Ekspor CSV</button>`}
+ if(tab=="det"){const s=T[sel];h+=`<select onchange="sel=this.value;rekap()">${TEAMS.map(t=>`<option value="${t.id}" ${t.id==sel?"selected":""}>${esc(t.n)}</option>`).join("")}</select>`;
+  h+=s&&s.inj?`<div class="card"><b>${esc(TEAMS.find(t=>t.id==sel).n)}</b> ${badge(sel)} · Evaluator: ${esc(s.evaluator)} · Total <b>${total(s)}</b></div><div class="card tw"><table><tr><th>Komponen</th><th>Skor</th><th>Catatan</th></tr>${INJ.map((q,i)=>`<tr><td>Inject ${i+1}: ${q[0]}</td><td>${s.inj[i]??"—"}</td><td>${esc(s.notes[i])}</td></tr>`).join("")}${CAT.map((c,i)=>`<tr><td>${c[0]} (×${c[1]})</td><td>${s.cat[i]??"—"} → ${wt(s)[i]}</td><td></td></tr>`).join("")}</table></div><div class="card">Catatan umum: ${esc(s.catNotes)||"—"}</div>`:`<div class="card">Belum ada data.</div>`}
+ if(tab=="rank"){const {r,tieTop}=ranking(),all=sent==8;
+  h+=`<div class="card"><b>Rekap peringkat</b> <span class="mu">(${all?"semua terkirim":"SEMENTARA — "+sent+"/8"})</span><div class="tw"><table><tr><th>#</th><th>Tim</th><th>Total</th><th>Mitigasi</th><th>Data & Bukti</th><th>Tindak Lanjut</th><th></th></tr>${r.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.t.n)}</td><td>${x.tot}</td><td>${x.w[0]}</td><td>${x.w[1]}</td><td>${x.w[5]}</td><td>${x.tie?'<span class="b wa">Seri</span>':""}</td></tr>`).join("")}</table></div></div>`;
+  if(all&&tieTop&&!FIN)h+=`<div class="card warn"><b>Seri tidak terselesaikan oleh semua tie-break.</b> Tetapkan manual dengan catatan.<div class="grid">${[0,1,2].map(i=>`<select id="mw${i}"><option value="">Tim Terbaik ${i+1}…</option>${TEAMS.map(t=>`<option value="${t.id}">${esc(t.n)}</option>`).join("")}</select>`).join("")}</div><textarea id="mnote" rows="2" placeholder="Catatan keputusan manual (wajib)"></textarea></div>`;
+  h+=FIN?`<div class="card"><b>Pemenang (final)</b>${FIN.w.map((id,i)=>`<p>Tim Terbaik ${i+1}: <b>${esc(TEAMS.find(t=>t.id==id)?.n)}</b></p>`).join("")}${FIN.note?`<p class="mu">Catatan: ${esc(FIN.note)}</p>`:""}</div><button onclick="unfin()">Cabut hasil final</button>`:`<button class="p" ${all?"":"disabled"} onclick="finalize(${tieTop})">Tetapkan hasil final</button>`}
+ if(tab=="log"){const L=Object.entries(T).flatMap(([id,x])=>(x.hist||[]).map(e=>({...e,team:id}))).sort((a,b)=>b.ts-a.ts).slice(0,100);h+=`<div class="card tw"><table><tr><th>Waktu</th><th>Tim</th><th>Aksi</th><th>Oleh</th><th>Total</th></tr>${L.map(a=>`<tr><td>${new Date(a.ts).toLocaleString("id-ID")}</td><td>${esc(TEAMS.find(t=>t.id==a.team)?.n)}</td><td>${esc(a.a)}</td><td>${esc(a.by)}</td><td>${a.total??""}</td></tr>`).join("")}</table></div>`}
+ $("#app").innerHTML=h}
+async function finalize(tie){const {r}=ranking();let w,note="";
+ if(tie){w=[0,1,2].map(i=>$("#mw"+i)?.value);note=$("#mnote")?.value.trim();if(w.some(x=>!x)||new Set(w).size<3||!note)return alert("Pilih tiga tim berbeda dan isi catatan.")}else w=r.slice(0,3).map(x=>x.t.id);
+ if(!confirm("Tetapkan hasil final?"))return;try{await api.setFinal({w,note,manual:!!tie})}catch(e){alert(e.message)}}
+async function unfin(){if(confirm("Cabut hasil final?"))await api.delFinal()}
+async function exportCsv(){const {r}=ranking(),rk=Object.fromEntries(r.map((x,i)=>[x.t.id,i+1]));
+ const hd=["Tim","Evaluator","Status",...INJ.map((_,i)=>"Inject "+(i+1)),...CAT.map(c=>c[0]+" (berbobot)"),"Total","Peringkat"],q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+ const L=[hd,...rows().map(x=>[x.t.n,x.s?.evaluator||"",st(x.t.id),...(x.ok?x.s.inj:Array(8).fill("")),...(x.ok?x.w:Array(6).fill("")),x.tot??"",rk[x.t.id]??""])];
+ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+L.map(l=>l.map(q).join(",")).join("\n")],{type:"text/csv"}));a.download="hasil-ttx-kpk.csv";a.click()}
+init();
+</script></body></html>
