@@ -23,6 +23,18 @@ ul.r{margin:6px 0 10px;padding-left:18px;color:var(--mu);font-size:13px}
 .bar{display:flex;align-items:center;gap:8px;margin:5px 0}.bar i{display:block;height:16px;background:var(--ac);border-radius:4px}.bar span{width:110px;font-size:13px;flex:none}
 .bot{position:sticky;bottom:0;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .warn{color:var(--wa)}
+
+.lv{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:8px}.lv button{height:auto;width:auto;padding:8px 2px;display:flex;flex-direction:column;align-items:center;line-height:1.2}.lv b{font-size:20px}.lv small{font-size:10.5px;opacity:.85}
+.hint{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--ac2);font-size:13px}
+.card.ok{border-left:4px solid var(--ok)}details summary{cursor:pointer;color:var(--mu);font-size:13px;margin-top:8px}details textarea{margin-top:6px}
+.pg{height:8px;background:var(--bd);border-radius:99px;overflow:hidden;margin-bottom:4px}.pg i{display:block;height:100%;width:0;background:var(--ok);transition:width .2s}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}#toast.show{opacity:1}
+.tc{text-align:left;padding:14px;height:auto}.tc b{font-size:17px}
+body.bd header{display:none}.bhd{text-align:center;padding:18px 0 8px}.bhd h1{font-size:clamp(28px,5vw,46px);margin:0;color:var(--ac)}.bhd p{margin:4px 0 12px;color:var(--mu)}
+.br{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:14px 16px}.br .rk{font-size:30px;text-align:center}.br .nm{font-size:clamp(18px,3vw,26px);font-weight:700}.br .sc2{font-size:clamp(24px,4vw,38px);font-weight:700}
+.br .bb{height:10px;background:var(--bd);border-radius:99px;margin-top:6px;overflow:hidden}.br .bb i{display:block;height:100%;background:var(--ac);border-radius:99px}
+.bctl{text-align:center;margin:16px 0;opacity:.7}
+@media(max-width:480px){.lv small{font-size:9px}.lv b{font-size:17px}}
 </style></head><body>
 <header><h1>TTX KPK Scoring Dashboard</h1><small><a href="#" style="color:#fff" onclick="go('home');return false">Beranda</a></small></header>
 <main id="app"><div class="card">Memuat…</div></main>
@@ -60,25 +72,49 @@ const api={
  async setFinal(f){await rq("final_result?on_conflict=id",{...UP,body:JSON.stringify({id:1,winners:f.w,note:f.note,manual:f.manual})});FIN=f;render()},
  async delFinal(){await rq("final_result?id=eq.1",{method:"DELETE"});FIN=null;render()}};
 async function refresh(){try{await api.load()}catch(e){if(view!="form")$("#app").innerHTML='<div class="card warn">Gagal terhubung ke database: '+esc(e.message)+'</div>';return}
- if(view=="home"||(view=="rekap"&&tab!="rank"))render()}
-async function init(){await refresh();if(view=="home")render();setInterval(refresh,15000)}
-function go(v,id){view=v;if(v=="form"){cur=id;D=JSON.parse(JSON.stringify(T[id]||blank(id)));D.hist=D.hist||[]}render()}
-function render(){view=="home"?home():view=="form"?form():rekap()}
-function home(){$("#app").innerHTML=`<div class="card"><b>Pilih tim yang Anda nilai</b><p class="mu">Isi nama evaluator di formulir, simpan draft, lalu kirim bila sudah lengkap.</p><div class="grid">${TEAMS.map(t=>`<button onclick="go('form','${t.id}')" style="text-align:left"><b>${esc(t.n)}</b><br>${badge(t.id)}<div class="mu">${esc(T[t.id]?.evaluator||"")}</div></button>`).join("")}</div></div><button class="p" onclick="go('rekap')">Rekap & Peringkat</button>`}
+ if(first||view=="home"||view=="board"||(view=="rekap"&&tab!="rank")){first=false;render()}}
+async function init(){if(location.hash=="#board")view="board";await refresh();setInterval(refresh,15000)}
+const LB=["Tidak ada","Sangat lemah","Kurang","Cukup","Baik","Sangat baik"];
+const LV=["Tidak ada respons atau respons tidak relevan.","Sangat lemah: hanya disebut sekilas, tanpa tindakan yang jelas.","Kurang: baru sebagian kecil indikator disentuh, belum jelas.","Cukup: sekitar separuh indikator terpenuhi, masih ada celah penting.","Baik: hampir semua indikator terpenuhi, tinggal penyempurnaan.","Sangat baik: semua indikator terpenuhi, keputusan jelas dan dapat dilaksanakan."];
+const CD=["Seberapa cepat dan tepat tim mengamankan akun, sesi, dan akses sesuai risiko.","Seberapa baik tim menjaga data pribadi serta mengamankan bukti dan log.","Seberapa jelas PIC, jalur eskalasi, dan pembagian peran antar-fungsi.","Seberapa tepat keputusan atas akun/layanan dan menjaga layanan tetap berjalan.","Seberapa baik komunikasi satu jalur resmi dan kajian kewajiban pelaporan.","Seberapa konkret rencana 24 jam / 7 hari / 30 hari, MFA, dan tindak lanjut."];
+let reveal=false,first=true;
+function toast(m){let t=$("#toast");if(!t){t=document.createElement("div");t.id="toast";document.body.appendChild(t)}t.textContent=m;t.className="show";clearTimeout(t._h);t._h=setTimeout(()=>t.className="",2200)}
+function go(v,id){if(v!="board"&&location.hash=="#board")history.replaceState(null,"",location.pathname+location.search);view=v;if(v=="form"){cur=id;D=JSON.parse(JSON.stringify(T[id]||blank(id)));D.hist=D.hist||[]}if(v=="board"){location.hash="board"}render();window.scrollTo(0,0)}
+window.addEventListener("hashchange",()=>{view=location.hash=="#board"?"board":(view=="board"?"home":view);render()});
+function render(){document.body.classList.toggle("bd",view=="board");view=="home"?home():view=="form"?form():view=="board"?board():rekap()}
+function home(){$("#app").innerHTML=`<div class="card"><h2 style="margin:0 0 4px">Pilih tim yang Anda nilai</h2><p class="mu">Ketuk satu tim, isi nama Anda, beri skor 0–5 pada setiap bagian, lalu kirim.</p><div class="grid">${TEAMS.map(t=>`<button class="tc" onclick="go('form','${t.id}')"><b>${esc(t.n)}</b><br>${badge(t.id)}<div class="mu">${esc(T[t.id]?.evaluator||"")}</div></button>`).join("")}</div></div><p class="mu" style="text-align:center"><a href="#board" onclick="go('board');return false">Scoring Board (layar peserta)</a> · <a href="#" onclick="go('rekap');return false">Rekap panitia</a></p>`}
+const grp=(k,i,lock)=>`<div class="lv">${[0,1,2,3,4,5].map(n=>`<button ${lock?"disabled":""} data-k="${k}" data-i="${i}" data-n="${n}" onclick="setS('${k}',${i},${n})"><b>${n}</b><small>${LB[n]}</small></button>`).join("")}</div><div class="hint" id="h-${k}-${i}"></div>`;
 function form(){
  const team=TEAMS.find(t=>t.id==cur),lock=D.state=="submitted";
- const miss=[...D.inj.map((v,i)=>valid(v)?null:"Inject "+(i+1)),...D.cat.map((v,i)=>valid(v)?null:CAT[i][0]),D.evaluator.trim()?null:"Nama evaluator"].filter(Boolean);
- const btns=(a,i,k)=>`<div class="sc">${[0,1,2,3,4,5].map(n=>`<button ${lock?"disabled":""} class="${a[i]===n?"p":""}" onclick="setS('${k}',${i},${n})">${n}</button>`).join("")}</div>`;
- $("#app").innerHTML=`<div class="card"><b>Tim: ${esc(team.n)}</b> ${badge(cur)}<p class="mu">Skala: ${SCALE}</p><input ${lock?"disabled":""} placeholder="Nama evaluator" value="${esc(D.evaluator)}" oninput="D.evaluator=this.value">${lock?'<p class="warn">Penilaian terkirim dan terkunci. <button onclick="unlock()">Buka kunci</button></p>':""}</div>
- <h3>Delapan Inject (0–5)</h3>${INJ.map((x,i)=>`<div class="card"><b>Inject ${i+1} — ${x[0]}</b><ul class="r">${x[1].map(t=>`<li>${t}</li>`).join("")}</ul>${btns(D.inj,i,"inj")}<textarea ${lock?"disabled":""} rows="2" placeholder="Catatan evaluator" oninput="D.notes[${i}]=this.value">${esc(D.notes[i])}</textarea></div>`).join("")}
- <h3>Kategori Berbobot</h3>${CAT.map((c,i)=>`<div class="card"><b>${c[0]}</b> <span class="mu">(bobot ${c[1]})</span>${btns(D.cat,i,"cat")}</div>`).join("")}
- <div class="card"><b>Catatan umum</b><textarea ${lock?"disabled":""} rows="3" oninput="D.catNotes=this.value">${esc(D.catNotes)}</textarea></div>
- <div class="bot"><div><b>Total sementara: ${total(D)} / 100</b><div class="mu ${miss.length?"warn":""}">${miss.length?"Belum diisi ("+miss.length+"): "+miss.join(", "):"Semua komponen terisi"}</div></div><div><button onclick="go('home')">Kembali</button> <button ${lock?"disabled":""} onclick="save('draft')">Simpan Draft</button> <button class="p" ${lock||miss.length?"disabled":""} onclick="save('submitted')">Kirim Penilaian</button></div></div>`}
-function setS(k,i,n){D[k][i]=n;form()}
+ $("#app").innerHTML=`<div class="card"><b style="font-size:18px">Tim: ${esc(team.n)}</b> ${badge(cur)}<input id="ev" style="margin-top:8px" ${lock?"disabled":""} placeholder="Nama evaluator (wajib)" value="${esc(D.evaluator)}" oninput="D.evaluator=this.value;upd()">${lock?'<p class="warn">Penilaian terkirim dan terkunci. <button onclick="unlock()">Buka kunci</button></p>':""}
+ <details><summary>Panduan skor 0–5</summary><ul class="r">${LV.map((t,n)=>`<li><b>${n} · ${LB[n]}</b> — ${t}</li>`).join("")}</ul></details></div>
+ <h3>A. Delapan Inject</h3>${INJ.map((x,i)=>`<div class="card" id="c-inj-${i}"><b>Inject ${i+1} — ${x[0]}</b><div class="mu" style="margin-top:4px">Indikator yang dicari:</div><ul class="r">${x[1].map(t=>`<li>${t}</li>`).join("")}</ul>${grp("inj",i,lock)}<details ${D.notes[i]?"open":""}><summary>＋ Catatan evaluator (opsional)</summary><textarea ${lock?"disabled":""} rows="2" oninput="D.notes[${i}]=this.value">${esc(D.notes[i])}</textarea></details></div>`).join("")}
+ <h3>B. Penilaian Berbobot</h3><p class="mu">Skor 0–5 dikonversi otomatis ke bobot.</p>${CAT.map((c,i)=>`<div class="card" id="c-cat-${i}"><b>${c[0]}</b> <span class="mu">(bobot ${c[1]})</span><div class="mu">${CD[i]}</div>${grp("cat",i,lock)}</div>`).join("")}
+ <div class="card"><b>Catatan umum (opsional)</b><textarea ${lock?"disabled":""} rows="3" oninput="D.catNotes=this.value">${esc(D.catNotes)}</textarea></div>
+ <div class="bot"><div style="flex:1;min-width:190px"><div class="pg"><i id="prog"></i></div><div class="mu" id="pt"></div></div><div><button onclick="go('home')">Kembali</button> <button ${lock?"disabled":""} onclick="save('draft')">Simpan Draft</button> <button class="p" id="bs" onclick="save('submitted')">Kirim</button></div></div>`;
+ upd()}
+function setS(k,i,n){D[k][i]=n;upd()}
+function upd(){
+ document.querySelectorAll(".lv button").forEach(b=>b.classList.toggle("p",D[b.dataset.k][+b.dataset.i]===+b.dataset.n));
+ ["inj","cat"].forEach(k=>D[k].forEach((v,i)=>{const h=$("#h-"+k+"-"+i);if(h)h.textContent=valid(v)?v+" · "+LB[v]+" — "+LV[v]:"Pilih skor 0–5 sesuai indikator di atas.";const c=$("#c-"+k+"-"+i);if(c)c.classList.toggle("ok",valid(v))}));
+ const f=[...D.inj,...D.cat].filter(valid).length,nm=D.evaluator.trim();
+ $("#prog").style.width=f/14*100+"%";
+ $("#pt").innerHTML=`<b>${f}/14 skor terisi · Total sementara ${total(D)} / 100</b>${f<14?` · <a href="#" onclick="jump();return false">cari yang kosong</a>`:""}${nm?"":" · isi nama evaluator"}`;
+ $("#bs").disabled=D.state=="submitted"||f<14||!nm}
+function jump(){const el=[...document.querySelectorAll("[id^=c-]")].find(e=>!e.classList.contains("ok"));if(el)el.scrollIntoView({behavior:"smooth",block:"center"})}
+function board(){
+ const R=rows(),sent=R.filter(x=>x.ok).length,show=reveal||!!FIN,{r}=ranking();
+ let order=r;if(FIN)order=[...FIN.w.map(id=>r.find(x=>x.t.id==id)).filter(Boolean),...r.filter(x=>!FIN.w.includes(x.t.id))];
+ const list=show?[...order,...R.filter(x=>!x.ok)]:R,med=["🥇","🥈","🥉"];
+ $("#app").innerHTML=`<div class="bhd"><h1>Scoring Board</h1><p>Tabletop Exercise Keamanan Informasi</p><span class="b ${FIN?"ok":"wa"}">${FIN?"HASIL FINAL":show?"HASIL SEMENTARA":"PENILAIAN BERJALAN"} · ${sent} / 8 tim telah dinilai</span></div>
+ ${list.map((x,i)=>{const showSc=show&&x.ok,rk=showSc?(FIN&&i<3?med[i]:i+1):"";const stt=x.ok?"Sudah dinilai":T[x.t.id]?"Sedang dinilai":"Menunggu";
+ return `<div class="card br"><div class="rk">${rk}</div><div><div class="nm">${esc(x.t.n)}</div>${showSc?`<div class="bb"><i style="width:${x.tot}%"></i></div>`:`<div class="mu">${stt}</div>`}</div><div class="sc2">${showSc?x.tot:(x.ok?"✓":"")}${showSc&&x.tie&&!FIN?' <span class="b wa">Seri</span>':""}</div></div>`}).join("")}
+ <div class="bctl"><button onclick="reveal=!reveal;board()">${show&&!FIN?"Sembunyikan skor":FIN?"Hasil final":"Tampilkan hasil"}</button> <button onclick="go('home')">Beranda</button></div>`}
+function setSLegacy(){}
 async function save(state){
  if(state=="submitted"){if(!done(D)||!D.evaluator.trim())return alert("Masih ada komponen kosong.");if(!confirm("Kirim dan kunci penilaian? Setelah dikirim, nilai tidak dapat diubah tanpa membuka kunci."))return}
  D.state=state;D.hist.push({a:state=="draft"?"simpan_draft":"kirim",by:D.evaluator,ts:Date.now(),total:total(D)});D.ts=Date.now();
- try{await api.save(D);alert(state=="draft"?"Draft tersimpan.":"Penilaian terkirim.");if(state=="submitted")go("home");else form()}catch(e){alert("Gagal menyimpan: "+(e.message||e.code))}}
+ try{await api.save(D);toast(state=="draft"?"Draft tersimpan ✓":"Penilaian terkirim ✓");if(state=="submitted")go("home");else upd()}catch(e){alert("Gagal menyimpan: "+(e.message||e.code))}}
 async function unlock(){if(!confirm("Buka kunci penilaian ini? Perubahan akan dicatat di riwayat."))return;D.state="reopened";D.hist.push({a:"dibuka_kembali",by:D.evaluator,ts:Date.now()});try{await api.save(D);form()}catch(e){alert(e.message)}}
 
 function rows(){return TEAMS.map(t=>{const s=T[t.id],ok=s&&s.state=="submitted"&&done(s);return{t,s,ok,tot:ok?total(s):null,w:ok?wt(s):null}})}
