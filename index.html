@@ -24,7 +24,7 @@ ul.r{margin:6px 0 10px;padding-left:18px;color:var(--mu);font-size:13px}
 .bot{position:sticky;bottom:0;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
 .warn{color:var(--wa)}
 
-.lv{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:8px}.lv button{height:auto;width:auto;padding:8px 2px;display:flex;flex-direction:column;align-items:center;line-height:1.2}.lv b{font-size:20px}.lv small{font-size:10.5px;opacity:.85}
+.lv{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}.lv button{height:auto;width:auto;padding:8px 2px;display:flex;flex-direction:column;align-items:center;line-height:1.2}.lv b{font-size:20px}.lv small{font-size:10.5px;opacity:.85}
 .hint{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--ac2);font-size:13px}
 .card.ok{border-left:4px solid var(--ok)}details summary{cursor:pointer;color:var(--mu);font-size:13px;margin-top:8px}details textarea{margin-top:6px}
 .pg{height:8px;background:var(--bd);border-radius:99px;overflow:hidden;margin-bottom:4px}.pg i{display:block;height:100%;width:0;background:var(--ok);transition:width .2s}
@@ -49,15 +49,16 @@ const INJ=[
 ["Sampel Data Beredar",["Memverifikasi sampel secara aman","Mengamankan bukti dan mencatat kronologi","Tidak menyebarkan sampel tanpa kebutuhan","Membedakan fakta terverifikasi dan klaim pihak lain"]],
 ["Pimpinan dan Media Bertanya",["Menyampaikan fakta, yang belum diketahui, dampak, tindakan","Menetapkan satu jalur komunikasi resmi","Menghindari spekulasi tanpa bukti","Mengkaji kewajiban pelaporan"]],
 ["Keputusan Akhir",["Tindakan akun/layanan sesuai tingkat risiko","Rencana tindak lanjut 24 jam, 7 hari, 30 hari","Menetapkan PIC dan tenggat","Implementasi MFA dan evaluasi aplikasi lain"]]];
-const CAT=[["Mitigasi dan keamanan akses",15],["Perlindungan data pribadi dan bukti",10],["Koordinasi dan kejelasan peran",10],["Keputusan dan keberlangsungan layanan",10],["Komunikasi krisis dan asesmen kewajiban pelaporan",5],["Rencana perbaikan, MFA, dan tindak lanjut",10]];
-const SCALE="0 Tidak ada/tidak relevan · 1 Sangat lemah · 2 Kurang · 3 Cukup · 4 Baik · 5 Sangat baik, jelas & dapat dilaksanakan";
+const CAT=[["Koordinasi lintas fungsi dan kejelasan peran",15],["Kualitas keputusan berbasis risiko dan keberlangsungan layanan",15],["Akuntabilitas, komunikasi, dan tindak lanjut",10]];
+const CATI=[["PIC dan peran setiap fungsi jelas","Eskalasi tepat ke CSIRT/IT, pemilik aplikasi, hukum, dan pimpinan","Kolaborasi lintas fungsi berjalan tertib dan saling melengkapi","Keputusan diambil oleh pihak yang berwenang"],["Keputusan didasarkan pada fakta dan tingkat risiko","Menyeimbangkan keamanan dengan keberlangsungan layanan","Mitigasi proporsional (tidak berlebihan atau kurang)","Mempertimbangkan dampak ke akun dan aplikasi lain"],["Komunikasi satu jalur resmi, faktual, tanpa spekulasi","Kronologi dan bukti tercatat rapi","Rencana tindak lanjut 24 jam, 7 hari, 30 hari dengan PIC dan tenggat","MFA dan evaluasi aplikasi lain ditetapkan"]];
+const SCALE="1 Sangat lemah · 2 Kurang · 3 Cukup · 4 Baik · 5 Sangat baik";
 const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const valid=v=>Number.isInteger(v)&&v>=0&&v<=5;
-const done=s=>s&&s.inj&&s.cat&&s.inj.length==8&&s.cat.length==6&&s.inj.every(valid)&&s.cat.every(valid);
+const valid=v=>Number.isInteger(v)&&v>=1&&v<=5;
+const done=s=>s&&s.inj&&s.cat&&s.inj.length==8&&s.cat.length==3&&s.inj.every(valid)&&s.cat.every(valid);
 const sumInj=s=>s.inj.reduce((a,v)=>a+(valid(v)?v:0),0);
 const wt=s=>s.cat.map((v,i)=>valid(v)?v/5*CAT[i][1]:0);
-const total=s=>Math.round((sumInj(s)+wt(s).reduce((a,b)=>a+b,0))*100)/100;
-const blank=id=>({team:id,evaluator:"",state:"none",inj:Array(8).fill(null),cat:Array(6).fill(null),notes:Array(8).fill(""),catNotes:"",hist:[]});
+const total=s=>Math.round((sumInj(s)*1.5+wt(s).reduce((a,b)=>a+b,0))*100)/100;
+const blank=id=>({team:id,evaluator:"",state:"none",inj:Array(8).fill(null),cat:Array(3).fill(null),notes:Array(8).fill(""),catNotes:"",hist:[]});
 let db,T={},FIN=null,view="home",cur=null,D=null,sel="t1",tab="ring";
 const st=id=>T[id]?.state=="submitted"?"Terkirim":T[id]?.state=="draft"||T[id]?.state=="reopened"?"Draft":"Belum Dimulai";
 const badge=id=>{const l=st(id);return `<span class="b ${l=="Terkirim"?"ok":l=="Draft"?"wa":""}">${l}</span>`};
@@ -74,33 +75,32 @@ const api={
 async function refresh(){try{await api.load()}catch(e){if(view!="form")$("#app").innerHTML='<div class="card warn">Gagal terhubung ke database: '+esc(e.message)+'</div>';return}
  if(first||view=="home"||view=="board"||(view=="rekap"&&tab!="rank")){first=false;render()}}
 async function init(){if(location.hash=="#board")view="board";await refresh();setInterval(refresh,15000)}
-const LB=["Tidak ada","Sangat lemah","Kurang","Cukup","Baik","Sangat baik"];
-const LV=["Tidak ada respons atau respons tidak relevan.","Sangat lemah: hanya disebut sekilas, tanpa tindakan yang jelas.","Kurang: baru sebagian kecil indikator disentuh, belum jelas.","Cukup: sekitar separuh indikator terpenuhi, masih ada celah penting.","Baik: hampir semua indikator terpenuhi, tinggal penyempurnaan.","Sangat baik: semua indikator terpenuhi, keputusan jelas dan dapat dilaksanakan."];
-const CD=["Seberapa cepat dan tepat tim mengamankan akun, sesi, dan akses sesuai risiko.","Seberapa baik tim menjaga data pribadi serta mengamankan bukti dan log.","Seberapa jelas PIC, jalur eskalasi, dan pembagian peran antar-fungsi.","Seberapa tepat keputusan atas akun/layanan dan menjaga layanan tetap berjalan.","Seberapa baik komunikasi satu jalur resmi dan kajian kewajiban pelaporan.","Seberapa konkret rencana 24 jam / 7 hari / 30 hari, MFA, dan tindak lanjut."];
+const LB=["","Sangat lemah","Kurang","Cukup","Baik","Sangat baik"];
+const LV=["","Sangat lemah: respons minimal, hampir tidak relevan atau tanpa tindakan jelas.","Kurang: baru sebagian kecil indikator disentuh, belum jelas.","Cukup: sekitar separuh indikator terpenuhi, masih ada celah penting.","Baik: hampir semua indikator terpenuhi, tinggal penyempurnaan.","Sangat baik: semua indikator terpenuhi, keputusan jelas dan dapat dilaksanakan."];
 let reveal=false,first=true;
 function toast(m){let t=$("#toast");if(!t){t=document.createElement("div");t.id="toast";document.body.appendChild(t)}t.textContent=m;t.className="show";clearTimeout(t._h);t._h=setTimeout(()=>t.className="",2200)}
 function go(v,id){if(v!="board"&&location.hash=="#board")history.replaceState(null,"",location.pathname+location.search);view=v;if(v=="form"){cur=id;D=JSON.parse(JSON.stringify(T[id]||blank(id)));D.hist=D.hist||[]}if(v=="board"){location.hash="board"}render();window.scrollTo(0,0)}
 window.addEventListener("hashchange",()=>{view=location.hash=="#board"?"board":(view=="board"?"home":view);render()});
 function render(){document.body.classList.toggle("bd",view=="board");view=="home"?home():view=="form"?form():view=="board"?board():rekap()}
-function home(){$("#app").innerHTML=`<div class="card"><h2 style="margin:0 0 4px">Pilih tim yang Anda nilai</h2><p class="mu">Ketuk satu tim, isi nama Anda, beri skor 0–5 pada setiap bagian, lalu kirim.</p><div class="grid">${TEAMS.map(t=>`<button class="tc" onclick="go('form','${t.id}')"><b>${esc(t.n)}</b><br>${badge(t.id)}<div class="mu">${esc(T[t.id]?.evaluator||"")}</div></button>`).join("")}</div></div><p class="mu" style="text-align:center"><a href="#board" onclick="go('board');return false">Scoring Board (layar peserta)</a> · <a href="#" onclick="go('rekap');return false">Rekap panitia</a></p>`}
-const grp=(k,i,lock)=>`<div class="lv">${[0,1,2,3,4,5].map(n=>`<button ${lock?"disabled":""} data-k="${k}" data-i="${i}" data-n="${n}" onclick="setS('${k}',${i},${n})"><b>${n}</b><small>${LB[n]}</small></button>`).join("")}</div><div class="hint" id="h-${k}-${i}"></div>`;
+function home(){$("#app").innerHTML=`<div class="card"><h2 style="margin:0 0 4px">Pilih tim yang Anda nilai</h2><p class="mu">Ketuk satu tim, isi nama Anda, beri skor 1–5 pada setiap bagian, lalu kirim.</p><div class="grid">${TEAMS.map(t=>`<button class="tc" onclick="go('form','${t.id}')"><b>${esc(t.n)}</b><br>${badge(t.id)}<div class="mu">${esc(T[t.id]?.evaluator||"")}</div></button>`).join("")}</div></div><p class="mu" style="text-align:center"><a href="#board" onclick="go('board');return false">Scoring Board (layar peserta)</a> · <a href="#" onclick="go('rekap');return false">Rekap panitia</a></p>`}
+const grp=(k,i,lock)=>`<div class="lv">${[1,2,3,4,5].map(n=>`<button ${lock?"disabled":""} data-k="${k}" data-i="${i}" data-n="${n}" onclick="setS('${k}',${i},${n})"><b>${n}</b><small>${LB[n]}</small></button>`).join("")}</div><div class="hint" id="h-${k}-${i}"></div>`;
 function form(){
  const team=TEAMS.find(t=>t.id==cur),lock=D.state=="submitted";
  $("#app").innerHTML=`<div class="card"><b style="font-size:18px">Tim: ${esc(team.n)}</b> ${badge(cur)}<input id="ev" style="margin-top:8px" ${lock?"disabled":""} placeholder="Nama evaluator (wajib)" value="${esc(D.evaluator)}" oninput="D.evaluator=this.value;upd()">${lock?'<p class="warn">Penilaian terkirim dan terkunci. <button onclick="unlock()">Buka kunci</button></p>':""}
- <details><summary>Panduan skor 0–5</summary><ul class="r">${LV.map((t,n)=>`<li><b>${n} · ${LB[n]}</b> — ${t}</li>`).join("")}</ul></details></div>
- <h3>A. Delapan Inject</h3>${INJ.map((x,i)=>`<div class="card" id="c-inj-${i}"><b>Inject ${i+1} — ${x[0]}</b><div class="mu" style="margin-top:4px">Indikator yang dicari:</div><ul class="r">${x[1].map(t=>`<li>${t}</li>`).join("")}</ul>${grp("inj",i,lock)}<details ${D.notes[i]?"open":""}><summary>＋ Catatan evaluator (opsional)</summary><textarea ${lock?"disabled":""} rows="2" oninput="D.notes[${i}]=this.value">${esc(D.notes[i])}</textarea></details></div>`).join("")}
- <h3>B. Penilaian Berbobot</h3><p class="mu">Skor 0–5 dikonversi otomatis ke bobot.</p>${CAT.map((c,i)=>`<div class="card" id="c-cat-${i}"><b>${c[0]}</b> <span class="mu">(bobot ${c[1]})</span><div class="mu">${CD[i]}</div>${grp("cat",i,lock)}</div>`).join("")}
+ <details><summary>Panduan skor 1–5</summary><ul class="r">${LV.map((t,n)=>n?`<li><b>${n} · ${LB[n]}</b> — ${t}</li>`:"").join("")}</ul></details></div>
+ <h3>A. Respons terhadap Inject (60%)</h3><p class="mu">8 inject × 5 poin = 40 poin mentah, dikonversi menjadi maksimal 60 poin.</p>${INJ.map((x,i)=>`<div class="card" id="c-inj-${i}"><b>Inject ${i+1} — ${x[0]}</b><div class="mu" style="margin-top:4px">Indikator yang dicari:</div><ul class="r">${x[1].map(t=>`<li>${t}</li>`).join("")}</ul>${grp("inj",i,lock)}<details ${D.notes[i]?"open":""}><summary>＋ Catatan evaluator (opsional)</summary><textarea ${lock?"disabled":""} rows="2" oninput="D.notes[${i}]=this.value">${esc(D.notes[i])}</textarea></details></div>`).join("")}
+ <h3>B. Kualitas Tim (40%)</h3><p class="mu">Skor 1–5 dikonversi otomatis ke bobot masing-masing aspek.</p>${CAT.map((c,i)=>`<div class="card" id="c-cat-${i}"><b>${c[0]}</b> <span class="mu">(bobot ${c[1]})</span><ul class="r">${CATI[i].map(t=>`<li>${t}</li>`).join("")}</ul>${grp("cat",i,lock)}</div>`).join("")}
  <div class="card"><b>Catatan umum (opsional)</b><textarea ${lock?"disabled":""} rows="3" oninput="D.catNotes=this.value">${esc(D.catNotes)}</textarea></div>
  <div class="bot"><div style="flex:1;min-width:190px"><div class="pg"><i id="prog"></i></div><div class="mu" id="pt"></div></div><div><button onclick="go('home')">Kembali</button> <button ${lock?"disabled":""} onclick="save('draft')">Simpan Draft</button> <button class="p" id="bs" onclick="save('submitted')">Kirim</button></div></div>`;
  upd()}
 function setS(k,i,n){D[k][i]=n;upd()}
 function upd(){
  document.querySelectorAll(".lv button").forEach(b=>b.classList.toggle("p",D[b.dataset.k][+b.dataset.i]===+b.dataset.n));
- ["inj","cat"].forEach(k=>D[k].forEach((v,i)=>{const h=$("#h-"+k+"-"+i);if(h)h.textContent=valid(v)?v+" · "+LB[v]+" — "+LV[v]:"Pilih skor 0–5 sesuai indikator di atas.";const c=$("#c-"+k+"-"+i);if(c)c.classList.toggle("ok",valid(v))}));
+ ["inj","cat"].forEach(k=>D[k].forEach((v,i)=>{const h=$("#h-"+k+"-"+i);if(h)h.textContent=valid(v)?v+" · "+LB[v]+" — "+LV[v]:"Pilih skor 1–5 sesuai indikator di atas.";const c=$("#c-"+k+"-"+i);if(c)c.classList.toggle("ok",valid(v))}));
  const f=[...D.inj,...D.cat].filter(valid).length,nm=D.evaluator.trim();
- $("#prog").style.width=f/14*100+"%";
- $("#pt").innerHTML=`<b>${f}/14 skor terisi · Total sementara ${total(D)} / 100</b>${f<14?` · <a href="#" onclick="jump();return false">cari yang kosong</a>`:""}${nm?"":" · isi nama evaluator"}`;
- $("#bs").disabled=D.state=="submitted"||f<14||!nm}
+ $("#prog").style.width=f/11*100+"%";
+ $("#pt").innerHTML=`<b>${f}/11 skor terisi · Total sementara ${total(D)} / 100</b>${f<11?` · <a href="#" onclick="jump();return false">cari yang kosong</a>`:""}${nm?"":" · isi nama evaluator"}`;
+ $("#bs").disabled=D.state=="submitted"||f<11||!nm}
 function jump(){const el=[...document.querySelectorAll("[id^=c-]")].find(e=>!e.classList.contains("ok"));if(el)el.scrollIntoView({behavior:"smooth",block:"center"})}
 function board(){
  const R=rows(),sent=R.filter(x=>x.ok).length,show=reveal||!!FIN,{r}=ranking();
@@ -117,8 +117,8 @@ async function save(state){
  try{await api.save(D);toast(state=="draft"?"Draft tersimpan ✓":"Penilaian terkirim ✓");if(state=="submitted")go("home");else upd()}catch(e){alert("Gagal menyimpan: "+(e.message||e.code))}}
 async function unlock(){if(!confirm("Buka kunci penilaian ini? Perubahan akan dicatat di riwayat."))return;D.state="reopened";D.hist.push({a:"dibuka_kembali",by:D.evaluator,ts:Date.now()});try{await api.save(D);form()}catch(e){alert(e.message)}}
 
-function rows(){return TEAMS.map(t=>{const s=T[t.id],ok=s&&s.state=="submitted"&&done(s);return{t,s,ok,tot:ok?total(s):null,w:ok?wt(s):null}})}
-function ranking(){const r=rows().filter(x=>x.ok).sort((a,b)=>b.tot-a.tot||b.w[0]-a.w[0]||b.w[1]-a.w[1]||b.w[5]-a.w[5]);const k=x=>[x.tot,x.w[0],x.w[1],x.w[5]].join("|");r.forEach((x,i)=>x.tie=r.some((y,j)=>j!=i&&k(y)==k(x)));return{r,tieTop:r.some((x,i)=>x.tie&&i<3)}}
+function rows(){return TEAMS.map(t=>{const s=T[t.id],ok=s&&s.state=="submitted"&&done(s);return{t,s,ok,tot:ok?total(s):null,i:ok?sumInj(s)*1.5:null,w:ok?wt(s):null}})}
+function ranking(){const r=rows().filter(x=>x.ok).sort((a,b)=>b.tot-a.tot||b.i-a.i||b.w[0]-a.w[0]||b.w[1]-a.w[1]||b.w[2]-a.w[2]);const k=x=>[x.tot,x.i,x.w[0],x.w[1],x.w[2]].join("|");r.forEach((x,i)=>x.tie=r.some((y,j)=>j!=i&&k(y)==k(x)));return{r,tieTop:r.some((x,i)=>x.tie&&i<3)}}
 function rekap(){
  view="rekap";const R=rows(),sent=R.filter(x=>x.ok).length,tabs=[["ring","Ringkasan"],["det","Detail Tim"],["rank","Peringkat & Pemenang"],["log","Riwayat"]];
  let h=`<div class="tabs">${tabs.map(t=>`<button class="${tab==t[0]?"on":""}" onclick="tab='${t[0]}';rekap()">${t[1]}</button>`).join("")}</div>`;
@@ -129,7 +129,7 @@ function rekap(){
  if(tab=="det"){const s=T[sel];h+=`<select onchange="sel=this.value;rekap()">${TEAMS.map(t=>`<option value="${t.id}" ${t.id==sel?"selected":""}>${esc(t.n)}</option>`).join("")}</select>`;
   h+=s&&s.inj?`<div class="card"><b>${esc(TEAMS.find(t=>t.id==sel).n)}</b> ${badge(sel)} · Evaluator: ${esc(s.evaluator)} · Total <b>${total(s)}</b></div><div class="card tw"><table><tr><th>Komponen</th><th>Skor</th><th>Catatan</th></tr>${INJ.map((q,i)=>`<tr><td>Inject ${i+1}: ${q[0]}</td><td>${s.inj[i]??"—"}</td><td>${esc(s.notes[i])}</td></tr>`).join("")}${CAT.map((c,i)=>`<tr><td>${c[0]} (×${c[1]})</td><td>${s.cat[i]??"—"} → ${wt(s)[i]}</td><td></td></tr>`).join("")}</table></div><div class="card">Catatan umum: ${esc(s.catNotes)||"—"}</div>`:`<div class="card">Belum ada data.</div>`}
  if(tab=="rank"){const {r,tieTop}=ranking(),all=sent==8;
-  h+=`<div class="card"><b>Rekap peringkat</b> <span class="mu">(${all?"semua terkirim":"SEMENTARA — "+sent+"/8"})</span><div class="tw"><table><tr><th>#</th><th>Tim</th><th>Total</th><th>Mitigasi</th><th>Data & Bukti</th><th>Tindak Lanjut</th><th></th></tr>${r.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.t.n)}</td><td>${x.tot}</td><td>${x.w[0]}</td><td>${x.w[1]}</td><td>${x.w[5]}</td><td>${x.tie?'<span class="b wa">Seri</span>':""}</td></tr>`).join("")}</table></div></div>`;
+  h+=`<div class="card"><b>Rekap peringkat</b> <span class="mu">(${all?"semua terkirim":"SEMENTARA — "+sent+"/8"})</span><div class="tw"><table><tr><th>#</th><th>Tim</th><th>Total</th><th>Respons Inject</th><th>Koordinasi</th><th>Keputusan</th><th>Akuntabilitas</th><th></th></tr>${r.map((x,i)=>`<tr><td>${i+1}</td><td>${esc(x.t.n)}</td><td>${x.tot}</td><td>${x.i}</td><td>${x.w[0]}</td><td>${x.w[1]}</td><td>${x.w[2]}</td><td>${x.tie?'<span class="b wa">Seri</span>':""}</td></tr>`).join("")}</table></div></div>`;
   if(all&&tieTop&&!FIN)h+=`<div class="card warn"><b>Seri tidak terselesaikan oleh semua tie-break.</b> Tetapkan manual dengan catatan.<div class="grid">${[0,1,2].map(i=>`<select id="mw${i}"><option value="">Tim Terbaik ${i+1}…</option>${TEAMS.map(t=>`<option value="${t.id}">${esc(t.n)}</option>`).join("")}</select>`).join("")}</div><textarea id="mnote" rows="2" placeholder="Catatan keputusan manual (wajib)"></textarea></div>`;
   h+=FIN?`<div class="card"><b>Pemenang (final)</b>${FIN.w.map((id,i)=>`<p>Tim Terbaik ${i+1}: <b>${esc(TEAMS.find(t=>t.id==id)?.n)}</b></p>`).join("")}${FIN.note?`<p class="mu">Catatan: ${esc(FIN.note)}</p>`:""}</div><button onclick="unfin()">Cabut hasil final</button>`:`<button class="p" ${all?"":"disabled"} onclick="finalize(${tieTop})">Tetapkan hasil final</button>`}
  if(tab=="log"){const L=Object.entries(T).flatMap(([id,x])=>(x.hist||[]).map(e=>({...e,team:id}))).sort((a,b)=>b.ts-a.ts).slice(0,100);h+=`<div class="card tw"><table><tr><th>Waktu</th><th>Tim</th><th>Aksi</th><th>Oleh</th><th>Total</th></tr>${L.map(a=>`<tr><td>${new Date(a.ts).toLocaleString("id-ID")}</td><td>${esc(TEAMS.find(t=>t.id==a.team)?.n)}</td><td>${esc(a.a)}</td><td>${esc(a.by)}</td><td>${a.total??""}</td></tr>`).join("")}</table></div>`}
@@ -139,8 +139,8 @@ async function finalize(tie){const {r}=ranking();let w,note="";
  if(!confirm("Tetapkan hasil final?"))return;try{await api.setFinal({w,note,manual:!!tie})}catch(e){alert(e.message)}}
 async function unfin(){if(confirm("Cabut hasil final?"))await api.delFinal()}
 async function exportCsv(){const {r}=ranking(),rk=Object.fromEntries(r.map((x,i)=>[x.t.id,i+1]));
- const hd=["Tim","Evaluator","Status",...INJ.map((_,i)=>"Inject "+(i+1)),...CAT.map(c=>c[0]+" (berbobot)"),"Total","Peringkat"],q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
- const L=[hd,...rows().map(x=>[x.t.n,x.s?.evaluator||"",st(x.t.id),...(x.ok?x.s.inj:Array(8).fill("")),...(x.ok?x.w:Array(6).fill("")),x.tot??"",rk[x.t.id]??""])];
+ const hd=["Tim","Evaluator","Status",...INJ.map((_,i)=>"Inject "+(i+1)),"Respons Inject (maks 60)",...CAT.map(c=>c[0]+" (berbobot)"),"Total","Peringkat"],q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+ const L=[hd,...rows().map(x=>[x.t.n,x.s?.evaluator||"",st(x.t.id),...(x.ok?x.s.inj:Array(8).fill("")),x.ok?x.i:"",...(x.ok?x.w:Array(3).fill("")),x.tot??"",rk[x.t.id]??""])];
  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+L.map(l=>l.map(q).join(",")).join("\n")],{type:"text/csv"}));a.download="hasil-ttx-kpk.csv";a.click()}
 init();
 </script></body></html>
