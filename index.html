@@ -41,14 +41,14 @@ body.bd header{display:none}.bhd{text-align:center;padding:18px 0 8px}.bhd h1{fo
 <script>
 const TEAMS=["ACLC","KWS","SPDP","GOL","LHKPN","Salma","SPI Pendidikan","PPID"].map((n,i)=>({id:"t"+(i+1),n}));
 const INJ=[
-["Kredensial Bocor",["Validasi sumber informasi dan akun yang terindikasi","Eskalasi ke CSIRT/IT dan pemilik aplikasi","Identifikasi status akun, hak akses, dan risiko","Mitigasi awal berdasarkan risiko"]],
-["Akun Masih Aktif",["Menonaktifkan/mengamankan kredensial sesuai risiko","Mempertimbangkan pencabutan sesi/token aktif","Mengamankan log dan bukti","Menentukan PIC dan otorisasi tindakan"]],
-["Login Tidak Dikenali",["Memperlakukan sebagai dugaan kompromi","Memeriksa waktu, sumber login, aktivitas akun","Membatasi akses berdasarkan risiko","Menjaga bukti tanpa kesimpulan belum terverifikasi"]],
-["Data Pribadi Berisiko",["Mengidentifikasi jenis data dan cakupan hak akses","Memeriksa akses, unduh, indikasi eksfiltrasi","Pembatasan akses berdasarkan risiko","Melibatkan pemilik aplikasi dan fungsi hukum"]],
-["Akses Berhasil Tanpa Verifikasi Tambahan",["Mengenali kelemahan autentikasi password saja","Menentukan mitigasi akun dan sesi","Mengusulkan MFA sebagai kontrol prioritas","Menilai risiko pada akun/aplikasi lain"]],
-["Sampel Data Beredar",["Memverifikasi sampel secara aman","Mengamankan bukti dan mencatat kronologi","Tidak menyebarkan sampel tanpa kebutuhan","Membedakan fakta terverifikasi dan klaim pihak lain"]],
-["Pimpinan dan Media Bertanya",["Menyampaikan fakta, yang belum diketahui, dampak, tindakan","Menetapkan satu jalur komunikasi resmi","Menghindari spekulasi tanpa bukti","Mengkaji kewajiban pelaporan"]],
-["Keputusan Akhir",["Tindakan akun/layanan sesuai tingkat risiko","Rencana tindak lanjut 24 jam, 7 hari, 30 hari","Menetapkan PIC dan tenggat","Implementasi MFA dan evaluasi aplikasi lain"]]];
+["Pemberitaan Dugaan Kebocoran",["Verifikasi klaim dan amankan bukti.","Koordinasi lintas role; jangan berspekulasi atau menyebarkan data pribadi."]],
+["Kredensial Valid",["Amankan akun, reset kata sandi, cabut sesi/token sesuai risiko.","Amankan bukti dan log; tetapkan penanggung jawab tindakan."]],
+["Login Tidak Dikenali",["Periksa log dan aktivitas setelah login.","Hentikan akses tidak sah; amankan bukti digital."]],
+["Akses ke Data Pribadi",["Identifikasi jenis data, cakupan akses, dan potensi dampak.","Batasi akses berdasarkan risiko dengan mempertimbangkan keberlangsungan layanan."]],
+["Login Tanpa MFA",["Identifikasi kelemahan autentikasi satu faktor; amankan akun dan sesi.","Usulkan MFA dan penguatan kontrol akses."]],
+["Sampel Data Beredar",["Validasi sampel dan telusuri cakupan paparan berdasarkan bukti.","Amankan bukti dan mulai penilaian kewajiban PDP."]],
+["Kepastian Humas dan Hukum",["Siapkan laporan pimpinan dan pernyataan publik berbasis fakta.","Nilai kewajiban pemberitahuan PDP; kelola tenggat 3 × 24 jam jika berlaku."]],
+["Keputusan dan Eskalasi",["Tetapkan tindakan containment, penanggung jawab, dan status layanan.","Koordinasikan Gov-CSIRT tanpa menunggu investigasi selesai; kewajiban PDP tetap berjalan.","Tetapkan rencana tindak lanjut 24 jam, 7 hari, dan 30 hari."]]];
 const CAT=[["Koordinasi lintas fungsi dan kejelasan peran",15],["Kualitas keputusan berbasis risiko dan keberlangsungan layanan",15],["Akuntabilitas, komunikasi, dan tindak lanjut",10]];
 const CATI=[["PIC dan peran setiap fungsi jelas","Eskalasi tepat ke CSIRT/IT, pemilik aplikasi, hukum, dan pimpinan","Kolaborasi lintas fungsi berjalan tertib dan saling melengkapi","Keputusan diambil oleh pihak yang berwenang"],["Keputusan didasarkan pada fakta dan tingkat risiko","Menyeimbangkan keamanan dengan keberlangsungan layanan","Mitigasi proporsional (tidak berlebihan atau kurang)","Mempertimbangkan dampak ke akun dan aplikasi lain"],["Komunikasi satu jalur resmi, faktual, tanpa spekulasi","Kronologi dan bukti tercatat rapi","Rencana tindak lanjut 24 jam, 7 hari, 30 hari dengan PIC dan tenggat","MFA dan evaluasi aplikasi lain ditetapkan"]];
 const SCALE="1 Sangat lemah · 2 Kurang · 3 Cukup · 4 Baik · 5 Sangat baik";
